@@ -1,0 +1,59 @@
+FreeRTOS Exercise 008:
+
+Control LEDs using UART commands as:
+On a reset:
+1. Menu should be displayed on the terminal, and prompt for user input.
+	User can input anything but we respond to few commands:
+		a. LED effect --> 0
+		b. Date and Time --> 1
+		c. Exit --> 2
+		Enter your choice: 
+		
+2. Menu selected --> 0 pressed and enter:
+	LED effect, then the LED menu should be displayed as:
+	(none, e1, e2, e3, e4)
+	Enter your choice: 
+		Depending on the user input LED pattern should change and main Menu should be displayed.
+	
+3. Menu selected --> 1 pressed and enter:
+	Date and Time menu should be displayed as:
+		Current Time& Date: 
+		Configure Time --> 0
+		Configure Date --> 1
+		Enable reporting --> 2
+		Exit		   --> 4
+		Enter your choice: 
+		
+		Depending on the user input, the action should be taken as:
+		for 0:
+			Enter hour:
+			Enter min:
+			Enter sec:
+			
+			after these inputs, time should be ticking
+			
+		for 1:
+			Enter Day:
+			Enter Month:
+			Enter year:
+			
+			after this, set Date should be displayed
+		
+		
+	
+4. Menu selected --> 2 pressed and enter:
+	Application should stop 
+	
+	
+	
+Five tasks:
+Menu task: Enqueue message to the 'IO Queue'
+LED task
+RTC task: 
+Print task: Dequeue message from 'IO Queue'
+Command handling task: Dequeue command from 'Command queue'
+
+UART ISR: Enqueue command to 'Command queue'
+
+
+
