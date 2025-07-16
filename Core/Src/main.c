@@ -21,7 +21,9 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include "FreeRTOS.h"
+#include "task.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -41,15 +43,32 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-/* USER CODE BEGIN PV */
+RTC_HandleTypeDef hrtc;
 
+UART_HandleTypeDef huart3;
+
+/* USER CODE BEGIN PV */
+#define DWT_CTRL_VALUE (*(volatile uint32_t *)(0xE0001000))
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_RTC_Init(void);
+static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
+static void tMenu(void *params);
+static void tLED(void *params);
+static void tRTC(void *params);
+static void tPrintf(void *params);
+static void tCmd(void *params);
 
+
+TaskHandle_t tMenuHandle;
+TaskHandle_t tLEDHandle; 
+TaskHandle_t tRTCHandle;
+TaskHandle_t tPrintfHandle;
+TaskHandle_t tCmdHandle;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -65,7 +84,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-
+  BaseType_t status;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -81,12 +100,70 @@ int main(void)
   SystemClock_Config();
 
   /* USER CODE BEGIN SysInit */
+  // Start the CYCLE Counter of ARM-Cortex M7
+  CoreDebug->DEMCR |= CoreDebug_DEMCR_TRCENA_Msk;
+  DWT->LAR =0xc5acce55;
+  DWT->CYCCNT = 0;
+  DWT->CTRL |= DWT_CTRL_CYCCNTENA_Msk;
+
 
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_RTC_Init();
+  MX_USART3_UART_Init();
   /* USER CODE BEGIN 2 */
+  // Start the CYCLE Counter of ARM-Cortex M7
+  DWT_CTRL_VALUE |= (1 << 0);
+
+//  SEGGER_UART_init(115200);
+//
+//  // The SEGGER_SYSVIEW_Conf has to be called before calling any FreeRTOS APIs
+//  SEGGER_SYSVIEW_Conf();
+
+  status = xTaskCreate(tMenu,
+                       "Menu",
+                       200,
+                       NULL,
+                       tskIDLE_PRIORITY + 1,
+                       &tMenuHandle);
+  configASSERT(status == pdPASS);
+
+  status = xTaskCreate(tLED,
+                       "LED",
+                       200,
+                       NULL,
+                       tskIDLE_PRIORITY + 1,
+                       &tLEDHandle);
+  configASSERT(status == pdPASS);
+
+  status = xTaskCreate(tRTC,
+                       "RTC",
+                       200,
+                       NULL,
+                       tskIDLE_PRIORITY + 1,
+                       &tRTCHandle);
+  configASSERT(status == pdPASS);
+
+  status = xTaskCreate(tPrintf,
+                       "Printf",
+                       200,
+                       NULL,
+                       tskIDLE_PRIORITY + 1,
+                       &tPrintfHandle);
+  configASSERT(status == pdPASS);
+
+  status = xTaskCreate(tCmd,
+                       "Cmd",
+                       200,
+                       NULL,
+                       tskIDLE_PRIORITY + 1,
+                       &tCmdHandle);
+  configASSERT(status == pdPASS);
+
+  // Start the FreeRTOS scheduler
+  vTaskStartScheduler();
 
   /* USER CODE END 2 */
 
@@ -118,9 +195,10 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
   RCC_OscInitStruct.HSIState = RCC_HSI_ON;
   RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -140,6 +218,76 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+}
+
+/**
+  * @brief RTC Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_RTC_Init(void)
+{
+
+  /* USER CODE BEGIN RTC_Init 0 */
+
+  /* USER CODE END RTC_Init 0 */
+
+  /* USER CODE BEGIN RTC_Init 1 */
+
+  /* USER CODE END RTC_Init 1 */
+
+  /** Initialize RTC Only
+  */
+  hrtc.Instance = RTC;
+  hrtc.Init.HourFormat = RTC_HOURFORMAT_12;
+  hrtc.Init.AsynchPrediv = 127;
+  hrtc.Init.SynchPrediv = 255;
+  hrtc.Init.OutPut = RTC_OUTPUT_DISABLE;
+  hrtc.Init.OutPutPolarity = RTC_OUTPUT_POLARITY_HIGH;
+  hrtc.Init.OutPutType = RTC_OUTPUT_TYPE_OPENDRAIN;
+  if (HAL_RTC_Init(&hrtc) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN RTC_Init 2 */
+
+  /* USER CODE END RTC_Init 2 */
+
+}
+
+/**
+  * @brief USART3 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART3_UART_Init(void)
+{
+
+  /* USER CODE BEGIN USART3_Init 0 */
+
+  /* USER CODE END USART3_Init 0 */
+
+  /* USER CODE BEGIN USART3_Init 1 */
+
+  /* USER CODE END USART3_Init 1 */
+  huart3.Instance = USART3;
+  huart3.Init.BaudRate = 115200;
+  huart3.Init.WordLength = UART_WORDLENGTH_8B;
+  huart3.Init.StopBits = UART_STOPBITS_1;
+  huart3.Init.Parity = UART_PARITY_NONE;
+  huart3.Init.Mode = UART_MODE_TX_RX;
+  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
+  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
+  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
+  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
+  if (HAL_UART_Init(&huart3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART3_Init 2 */
+
+  /* USER CODE END USART3_Init 2 */
+
 }
 
 /**
@@ -205,14 +353,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
   HAL_GPIO_Init(RMII_TXD1_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : STLK_RX_Pin STLK_TX_Pin */
-  GPIO_InitStruct.Pin = STLK_RX_Pin|STLK_TX_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF7_USART3;
-  HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
   /*Configure GPIO pin : USB_PowerSwitchOn_Pin */
   GPIO_InitStruct.Pin = USB_PowerSwitchOn_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
@@ -254,7 +394,36 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void tMenu(void *params) {
+  while (1) {
+    vTaskDelay(pdMS_TO_TICKS(1000));
+  }
+}
 
+void tLED(void *params) {
+  while (1) {
+    HAL_GPIO_TogglePin(GPIOB, LD1_Pin);
+    vTaskDelay(pdMS_TO_TICKS(500));
+  }
+}
+
+void tRTC(void *params) {
+  while (1) {
+    vTaskDelay(pdMS_TO_TICKS(2000));
+  }
+}
+
+void tPrintf(void *params) {
+  while (1) {
+    vTaskDelay(pdMS_TO_TICKS(1500));
+  }
+}
+
+void tCmd(void *params) {
+  while (1) {
+    vTaskDelay(pdMS_TO_TICKS(1200));
+  }
+}
 /* USER CODE END 4 */
 
 /**

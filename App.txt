@@ -57,3 +57,7 @@ UART ISR: Enqueue command to 'Command queue'
 
 
 
+Excluded the Common->SEGGER folder from build as we are using the same USART for communicating to PC. 
+Deleted any SEGGER related calls from FreeRTOS_config.h
+
+
