@@ -31,12 +31,30 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include <stdbool.h>
+#include "FreeRTOS.h"
+#include "task.h"
+#include "queue.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+typedef struct 	{
+	uint8_t payload[10];
+	uint8_t len;
+}command_t;
 
+// Application state
+typedef enum {
+	sMainMenu = 0,
+	sLedEffect,
+	sRtcMenu,
+	sRtcTimeConfig,
+	sRtcDateConfig,
+	sRtcReport,
+}state_t;
+
+extern state_t curr_state;
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -53,7 +71,13 @@ extern "C" {
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+extern TaskHandle_t tMenuHandle;
+extern TaskHandle_t tLEDHandle;
+extern TaskHandle_t tRTCHandle;
+extern TaskHandle_t tPrintfHandle;
+extern TaskHandle_t tCmdHandle;
 
+extern QueueHandle_t qDataHandle, qPrintHandle;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

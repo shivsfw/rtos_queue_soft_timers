@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include "FreeRTOS.h"
 #include "task.h"
+#include "queue.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -64,11 +65,22 @@ static void tPrintf(void *params);
 static void tCmd(void *params);
 
 
+void tMenu(void *params);
+void tLED(void *params);
+void tRTC(void *params);
+void tPrintf(void *params);
+void tCmd(void *params);
+
 TaskHandle_t tMenuHandle;
-TaskHandle_t tLEDHandle; 
+TaskHandle_t tLEDHandle;
 TaskHandle_t tRTCHandle;
 TaskHandle_t tPrintfHandle;
 TaskHandle_t tCmdHandle;
+
+QueueHandle_t qDataHandle, qPrintHandle;
+state_t curr_state = sMainMenu;
+
+volatile uint8_t user_data;
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -126,7 +138,7 @@ int main(void)
                        "Menu",
                        200,
                        NULL,
-                       tskIDLE_PRIORITY + 1,
+                       tskIDLE_PRIORITY + 2,
                        &tMenuHandle);
   configASSERT(status == pdPASS);
 
@@ -134,7 +146,7 @@ int main(void)
                        "LED",
                        200,
                        NULL,
-                       tskIDLE_PRIORITY + 1,
+                       tskIDLE_PRIORITY + 2,
                        &tLEDHandle);
   configASSERT(status == pdPASS);
 
@@ -142,7 +154,7 @@ int main(void)
                        "RTC",
                        200,
                        NULL,
-                       tskIDLE_PRIORITY + 1,
+                       tskIDLE_PRIORITY + 2,
                        &tRTCHandle);
   configASSERT(status == pdPASS);
 
@@ -150,7 +162,7 @@ int main(void)
                        "Printf",
                        200,
                        NULL,
-                       tskIDLE_PRIORITY + 1,
+                       tskIDLE_PRIORITY + 2,
                        &tPrintfHandle);
   configASSERT(status == pdPASS);
 
@@ -161,6 +173,18 @@ int main(void)
                        tskIDLE_PRIORITY + 1,
                        &tCmdHandle);
   configASSERT(status == pdPASS);
+
+  //Create Queues
+  qDataHandle = xQueueCreate(10, sizeof(char));
+
+  configASSERT(qDataHandle != NULL);
+
+  qPrintHandle = xQueueCreate(10, sizeof(size_t));
+
+  configASSERT(qPrintHandle != NULL);
+
+
+  HAL_UART_Receive_IT(&huart3, &user_data, 1);
 
   // Start the FreeRTOS scheduler
   vTaskStartScheduler();
@@ -394,36 +418,32 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void tMenu(void *params) {
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(1000));
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+  uint8_t dummy;
+  //pdFALSE if the queue is not full, or
+  //pdTRUE if the queue is full.
+  if(xQueueIsQueueFullFromISR( qDataHandle ) == pdTRUE)	{
+	  // Queue is full - ignore it to process the first rxd command
+
+	  //if the queue is full and we receive \n then replace the last char in queue with '\n'
+	  //to make sure that the command is valid to process by the command handler
+	  if(user_data == '\n')	{
+		  xQueueReceiveFromISR(qDataHandle, (void *)&dummy, NULL);
+		  xQueueSendFromISR(qDataHandle, (void *)&user_data, NULL);
+	  }
+  } else	{
+	  //Queue is not full, enqueue data
+	  xQueueSendFromISR(qDataHandle, (void *)&user_data ,NULL);
   }
+  if(user_data == '\n')	{
+	  xTaskNotifyFromISR(tCmdHandle, 0, eNoAction, NULL);
+  }
+
+  HAL_UART_Receive_IT(&huart3, &user_data, 1);
+
 }
 
-void tLED(void *params) {
-  while (1) {
-    HAL_GPIO_TogglePin(GPIOB, LD1_Pin);
-    vTaskDelay(pdMS_TO_TICKS(500));
-  }
-}
-
-void tRTC(void *params) {
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(2000));
-  }
-}
-
-void tPrintf(void *params) {
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(1500));
-  }
-}
-
-void tCmd(void *params) {
-  while (1) {
-    vTaskDelay(pdMS_TO_TICKS(1200));
-  }
-}
 /* USER CODE END 4 */
 
 /**
