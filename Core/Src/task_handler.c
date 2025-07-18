@@ -107,8 +107,10 @@ void tRTC(void *params) {
 }
 
 void tPrintf(void *params) {
+  uint32_t *msg;
   while (1) {
-
+	  xQueueReceive(qPrintHandle, &msg, portMAX_DELAY);
+	  HAL_UART_Transmit(&huart3, (uint8_t *)(msg), strlen((char*)msg), HAL_MAX_DELAY);
   }
 }
 
@@ -171,8 +173,6 @@ void process_cmd(command_t *cmd)	{
 		xTaskNotify(tRTCHandle, (uint32_t)cmd, eSetValueWithOverwrite);
 		break;
 	}
-
-	return;
 }
 
 

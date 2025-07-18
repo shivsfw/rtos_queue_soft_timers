@@ -21,10 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdbool.h>
-#include "FreeRTOS.h"
-#include "task.h"
-#include "queue.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -70,13 +67,15 @@ void tLED(void *params);
 void tRTC(void *params);
 void tPrintf(void *params);
 void tCmd(void *params);
+void timerLedeffect(TimerHandle_t expTimer);
 
 TaskHandle_t tMenuHandle;
 TaskHandle_t tLEDHandle;
 TaskHandle_t tRTCHandle;
 TaskHandle_t tPrintfHandle;
 TaskHandle_t tCmdHandle;
-
+TimerHandle_t tr500msHandle;
+TimerHandle_t tr200msHandle;
 QueueHandle_t qDataHandle, qPrintHandle;
 state_t curr_state = sMainMenu;
 
@@ -135,55 +134,56 @@ int main(void)
 //  SEGGER_SYSVIEW_Conf();
 
   status = xTaskCreate(tMenu,
-                       "Menu",
-                       200,
+                       "Menu_task",
+                       250,
                        NULL,
                        tskIDLE_PRIORITY + 2,
                        &tMenuHandle);
   configASSERT(status == pdPASS);
 
   status = xTaskCreate(tLED,
-                       "LED",
-                       200,
+                       "LED_task",
+                       250,
                        NULL,
                        tskIDLE_PRIORITY + 2,
                        &tLEDHandle);
   configASSERT(status == pdPASS);
 
   status = xTaskCreate(tRTC,
-                       "RTC",
-                       200,
+                       "RTC_task",
+                       250,
                        NULL,
                        tskIDLE_PRIORITY + 2,
                        &tRTCHandle);
   configASSERT(status == pdPASS);
 
   status = xTaskCreate(tPrintf,
-                       "Printf",
-                       200,
+                       "Print_task",
+                       250,
                        NULL,
                        tskIDLE_PRIORITY + 2,
                        &tPrintfHandle);
   configASSERT(status == pdPASS);
 
   status = xTaskCreate(tCmd,
-                       "Cmd",
-                       200,
+                       "Cmd_task",
+                       250,
                        NULL,
-                       tskIDLE_PRIORITY + 1,
+                       tskIDLE_PRIORITY + 2,
                        &tCmdHandle);
   configASSERT(status == pdPASS);
 
   //Create Queues
-  qDataHandle = xQueueCreate(10, sizeof(char));
+  qDataHandle = xQueueCreate(100, sizeof(char));
 
   configASSERT(qDataHandle != NULL);
 
-  qPrintHandle = xQueueCreate(10, sizeof(size_t));
+  qPrintHandle = xQueueCreate(100, sizeof(size_t));
 
   configASSERT(qPrintHandle != NULL);
 
-
+  tr500msHandle = xTimerCreate("t500ms", pdMS_TO_TICKS(500), pdTRUE, (void *) 1, timerLedeffect);
+  tr200msHandle = xTimerCreate("t200ms", pdMS_TO_TICKS(200), pdTRUE, (void *) 2, timerLedeffect);
   HAL_UART_Receive_IT(&huart3, &user_data, 1);
 
   // Start the FreeRTOS scheduler
@@ -421,6 +421,7 @@ static void MX_GPIO_Init(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   uint8_t dummy;
+  for(uint32_t i = 0 ; i < 4000 ; i++);
   //pdFALSE if the queue is not full, or
   //pdTRUE if the queue is full.
   if(xQueueIsQueueFullFromISR( qDataHandle ) == pdTRUE)	{

@@ -36,6 +36,7 @@ extern "C" {
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
+#include "timers.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
@@ -79,8 +80,10 @@ extern TaskHandle_t tLEDHandle;
 extern TaskHandle_t tRTCHandle;
 extern TaskHandle_t tPrintfHandle;
 extern TaskHandle_t tCmdHandle;
-
+extern TimerHandle_t tr500msHandle;
+extern TimerHandle_t tr200msHandle;
 extern QueueHandle_t qDataHandle, qPrintHandle;
+extern UART_HandleTypeDef huart3;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
