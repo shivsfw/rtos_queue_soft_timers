@@ -32,6 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
+#include "string.h"
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -55,6 +56,8 @@ typedef enum {
 }state_t;
 
 extern state_t curr_state;
+
+void led_effect(uint8_t pattern);
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -135,7 +138,11 @@ extern QueueHandle_t qDataHandle, qPrintHandle;
 #define LD2_GPIO_Port GPIOB
 
 /* USER CODE BEGIN Private defines */
+#define LED_GREEN_Pin LD1_Pin
+#define LED_BLUE_Pin LD2_Pin
+#define LED_RED_Pin LD3_Pin
 
+#define LED_PORT	GPIOB
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
