@@ -7,7 +7,7 @@
 
 #include "main.h"
 
-const char *msg_main_menu = "===================\r\n"
+const char *msg_main_menu = "\r\n===================\r\n"
 							"|_______Menu_______|\r\n"
 							"===================\r\n"
 							"LED effect------> 0\r\n"
@@ -16,11 +16,11 @@ const char *msg_main_menu = "===================\r\n"
 							"===================\r\n"
 							"Enter your choice: ";
 
-const char *msg_invalid = "=====MInvalid=======\r\n";
-const char *msg_invalid1 = "=====1Invalid=======\r\n";
-const char *msg_invalid2 = "=====2Invalid=======\r\n";
+const char *msg_invalid = "\r\n=====InvalidM=======\r\n";
+const char *msg_invalid1 = "\r\n=====InvalidL1=======\r\n";
+const char *msg_invalid2 = "\r\n=====InvalidL2=======\r\n";
 
-const char *msg_led_menu =  "===================\r\n"
+const char *msg_led_menu =  "\r\n===================\r\n"
 							"|_______LED_______|\r\n"
 							"===================\r\n"
 							"none, e1, e2       \r\n"
@@ -66,6 +66,7 @@ void tMenu(void *params) {
 	  }
 	  else	{							//Invalid command
 		  xQueueSend(qPrintHandle, &msg_invalid, portMAX_DELAY);
+		  continue;
 	  }
 
 	  xTaskNotifyWait(0,0,&cmd_holder, portMAX_DELAY);
