@@ -7,22 +7,24 @@
 
 #include "main.h"
 
-const char *msg_main_menu = "===================\n"
-							"|		Menu	   |\n"
-							"===================\n"
-							"LED effect    --> 0\n"
-							"Date and time --> 1\n"
-							"Exit		   --> 2\n"
-							"===================\n"
+const char *msg_main_menu = "===================\r\n"
+							"|_______Menu_______|\r\n"
+							"===================\r\n"
+							"LED effect------> 0\r\n"
+							"Date and time --> 1\r\n"
+							"Exit------------> 2\r\n"
+							"===================\r\n"
 							"Enter your choice: ";
 
-const char *msg_invalid = "=====Invalid=======\n";
+const char *msg_invalid = "=====MInvalid=======\r\n";
+const char *msg_invalid1 = "=====1Invalid=======\r\n";
+const char *msg_invalid2 = "=====2Invalid=======\r\n";
 
-const char *msg_led_menu =  "===================\n"
-							"|		LED 	   |\n"
-							"===================\n"
-							"none, e1, e2       \n"
-							"===================\n"
+const char *msg_led_menu =  "===================\r\n"
+							"|_______LED_______|\r\n"
+							"===================\r\n"
+							"none, e1, e2       \r\n"
+							"===================\r\n"
 							"Enter your choice: ";
 
 
@@ -35,14 +37,14 @@ void tMenu(void *params) {
   uint8_t usr_selected =0;
 
   while (1) {
-	  xQueueSend(qPrintHandle, msg_main_menu, portMAX_DELAY);
+	  xQueueSend(qPrintHandle, &msg_main_menu, portMAX_DELAY);
 
 	  xTaskNotifyWait(0,0,&cmd_holder, portMAX_DELAY);		//it has to block as it is waiting for the input,
 	  	  //Todo: may be we can pass on to idle task here and free up the kernel.
 
 	  cmd = (command_t*) cmd_holder;
 
-	  if (cmd->len == 1)	{			//Valid command
+	  if (cmd->len == 3)	{			//Valid command
 		  usr_selected = cmd->payload[0] - 48;
 		  switch(usr_selected){
 		  case 0: 		//LED
@@ -58,12 +60,12 @@ void tMenu(void *params) {
 			  //xTaskNotifyWait(0,0,&cmd_holder, portMAX_DELAY);
 			  break;
 		  default:		//
-			  xQueueSend(qPrintHandle, msg_invalid, portMAX_DELAY);
+			  xQueueSend(qPrintHandle, &msg_invalid, portMAX_DELAY);
 			  continue;
 		  }
 	  }
 	  else	{							//Invalid command
-		  xQueueSend(qPrintHandle, msg_invalid, portMAX_DELAY);
+		  xQueueSend(qPrintHandle, &msg_invalid, portMAX_DELAY);
 	  }
 
 	  xTaskNotifyWait(0,0,&cmd_holder, portMAX_DELAY);
@@ -73,24 +75,24 @@ void tMenu(void *params) {
 void tLED(void *params) {
   uint32_t cmd_holder;
   command_t *cmd;
-  uint8_t usr_selected =0;
+
   while (1) {
 	xTaskNotifyWait(0,0,&cmd_holder, portMAX_DELAY);		//wait for the user to select LED task
-	xQueueSend(qPrintHandle, msg_led_menu, portMAX_DELAY);	//send the initial message from LED task
+	xQueueSend(qPrintHandle, &msg_led_menu, portMAX_DELAY);	//send the initial message from LED task
 	xTaskNotifyWait(0,0,&cmd_holder, portMAX_DELAY);		//wait for the user selection for LED pattern
 
 	cmd = (command_t *)cmd_holder;
 	if(cmd->len <= 4)	{
-		if(!strcmp((char*)cmd->payload, "none"))
+		if(!strcmp((char*)cmd->payload, "none\n"))
 			led_effect(0);
-		else if(!strcmp((char*)cmd->payload, "e1"))
+		else if(!strcmp((char*)cmd->payload, "e1\n"))
 			led_effect(1);
-		else if(!strcmp((char*)cmd->payload, "e2"))
+		else if(!strcmp((char*)cmd->payload, "e2\n"))
 			led_effect(2);
 		else
-			xQueueSend(qPrintHandle, msg_invalid, portMAX_DELAY);
+			xQueueSend(qPrintHandle, &msg_invalid1, portMAX_DELAY);
 	} else	{
-		xQueueSend(qPrintHandle, msg_invalid, portMAX_DELAY);
+		xQueueSend(qPrintHandle, &msg_invalid2, portMAX_DELAY);
 	}
 
 	curr_state = sMainMenu;
@@ -102,15 +104,15 @@ void tLED(void *params) {
 
 void tRTC(void *params) {
   while (1) {
-
+	  xTaskNotifyWait(0, 0, NULL, portMAX_DELAY);
   }
 }
 
 void tPrintf(void *params) {
-  uint32_t *msg;
+  uint32_t *msg = NULL;
   while (1) {
 	  xQueueReceive(qPrintHandle, &msg, portMAX_DELAY);
-	  HAL_UART_Transmit(&huart3, (uint8_t *)(msg), strlen((char*)msg), HAL_MAX_DELAY);
+	  HAL_UART_Transmit(&huart3, (uint8_t *)msg, strlen(msg), HAL_MAX_DELAY);
   }
 }
 
@@ -124,7 +126,7 @@ void tCmd(void *params) {
 	  notification_status = xTaskNotifyWait(0,0,NULL, portMAX_DELAY);
 
 	  //if notification was rxd
-	  if(notification_status == true)		{
+	  if(notification_status == pdTRUE)		{
 		  process_cmd(&cmd);
 	  }
 	  else	{
@@ -134,18 +136,18 @@ void tCmd(void *params) {
 }
 
 void process_cmd(command_t *cmd)	{
-	uint8_t usr_byte;
+	uint8_t usr_byte = 0;
 	uint16_t i = 0;
 
 	BaseType_t q_status;
 
-	portENTER_CRITICAL();
+	//portENTER_CRITICAL();
 
 	if(!uxQueueMessagesWaiting( qDataHandle ))	{
 		return;
 	}
 
-	while((usr_byte != '\n') &
+	while((usr_byte != '\n') &&
 			(uxQueueMessagesWaiting( qDataHandle ) != 0 ))	{
 		q_status = xQueueReceive(qDataHandle, &usr_byte, 0);
 		if(q_status == pdTRUE)	{
@@ -155,7 +157,7 @@ void process_cmd(command_t *cmd)	{
 	cmd->payload[i++] = '\0';
 	cmd->len = i;
 
-	portEXIT_CRITICAL();
+	//portEXIT_CRITICAL();
 
 	switch(curr_state)	{
 	case sMainMenu:

@@ -161,7 +161,7 @@ int main(void)
                        "Print_task",
                        250,
                        NULL,
-                       tskIDLE_PRIORITY + 2,
+                       tskIDLE_PRIORITY + 3,
                        &tPrintfHandle);
   configASSERT(status == pdPASS);
 
@@ -174,11 +174,11 @@ int main(void)
   configASSERT(status == pdPASS);
 
   //Create Queues
-  qDataHandle = xQueueCreate(100, sizeof(char));
+  qDataHandle = xQueueCreate(10, sizeof(char));
 
   configASSERT(qDataHandle != NULL);
 
-  qPrintHandle = xQueueCreate(100, sizeof(size_t));
+  qPrintHandle = xQueueCreate(10, sizeof(size_t));
 
   configASSERT(qPrintHandle != NULL);
 
@@ -421,7 +421,7 @@ static void MX_GPIO_Init(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
   uint8_t dummy;
-  for(uint32_t i = 0 ; i < 4000 ; i++);
+
   //pdFALSE if the queue is not full, or
   //pdTRUE if the queue is full.
   if(xQueueIsQueueFullFromISR( qDataHandle ) == pdTRUE)	{
@@ -441,8 +441,9 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  xTaskNotifyFromISR(tCmdHandle, 0, eNoAction, NULL);
   }
 
-  HAL_UART_Receive_IT(&huart3, &user_data, 1);
+  HAL_UART_Transmit(&huart3, &user_data, 1, 0);
 
+  HAL_UART_Receive_IT(&huart3, &user_data, 1);
 }
 
 /* USER CODE END 4 */
