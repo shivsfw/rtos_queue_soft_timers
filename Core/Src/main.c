@@ -435,6 +435,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 	  }
   } else	{
 	  //Queue is not full, enqueue data
+
 	  xQueueSendFromISR(qDataHandle, (void *)&user_data ,NULL);
   }
   if(user_data == '\n')	{

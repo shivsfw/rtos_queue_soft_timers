@@ -32,6 +32,7 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include <stdbool.h>
+#include <stdio.h>
 #include "string.h"
 #include "FreeRTOS.h"
 #include "task.h"
@@ -59,6 +60,16 @@ typedef enum {
 extern state_t curr_state;
 
 void led_effect(uint8_t pattern);
+bool time_valid(RTC_TimeTypeDef *refTime);
+bool input_valid(RTC_DateTypeDef *refDate);
+uint8_t getinput(uint32_t cmd_holder);
+void show_date_time(RTC_DateTypeDef setdate, RTC_TimeTypeDef settime);
+void show_clock();
+void rtc_set_time(RTC_TimeTypeDef *time);
+void rtc_set_date(RTC_DateTypeDef *date);
+void rtc_get_date(RTC_DateTypeDef *date);
+void rtc_get_time(RTC_TimeTypeDef *time);
+
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
@@ -84,6 +95,7 @@ extern TimerHandle_t tr500msHandle;
 extern TimerHandle_t tr200msHandle;
 extern QueueHandle_t qDataHandle, qPrintHandle;
 extern UART_HandleTypeDef huart3;
+extern RTC_HandleTypeDef hrtc;
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
