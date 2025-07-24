@@ -55,13 +55,6 @@ static void MX_GPIO_Init(void);
 static void MX_RTC_Init(void);
 static void MX_USART3_UART_Init(void);
 /* USER CODE BEGIN PFP */
-static void tMenu(void *params);
-static void tLED(void *params);
-static void tRTC(void *params);
-static void tPrintf(void *params);
-static void tCmd(void *params);
-
-
 void tMenu(void *params);
 void tLED(void *params);
 void tRTC(void *params);

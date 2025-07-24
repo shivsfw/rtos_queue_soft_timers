@@ -43,21 +43,5 @@ On a reset:
 	
 4. Menu selected --> 2 pressed and enter:
 	Application should stop 
-	
-	
-	
-Five tasks:
-Menu task: Enqueue message to the 'IO Queue'
-LED task
-RTC task: 
-Print task: Dequeue message from 'IO Queue'
-Command handling task: Dequeue command from 'Command queue'
 
-UART ISR: Enqueue command to 'Command queue'
-
-
-
-
-Created queues for Printing and incoming commands
-Command task to handle incoming commands and notify tasks
 
